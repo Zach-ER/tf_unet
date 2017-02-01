@@ -209,6 +209,7 @@ class Unet(object):
         
         flat_logits = tf.reshape(logits, [-1, self.n_class])
         flat_labels = tf.reshape(self.y, [-1, self.n_class])
+        flat_predictions = tf.reshape(self.predicter,[-1,self.n_class])
         if cost_name == "cross_entropy":
             class_weights = cost_kwargs.pop("class_weights", None)
             
@@ -227,10 +228,10 @@ class Unet(object):
                 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(flat_logits, 
                                                                               flat_labels))
         elif cost_name == "dice_coefficient":
-            intersection = tf.reduce_sum(flat_logits * flat_labels, axis=1, keep_dims=True)
-            union = tf.reduce_sum(tf.mul(flat_logits, flat_logits), axis=1, keep_dims=True) \
-                    + tf.reduce_sum(tf.mul(flat_labels, flat_labels), axis=1, keep_dims=True)
-            loss = 1 - tf.reduce_mean(2 * intersection/ (union))
+            intersection = tf.reduce_sum(tf.mul(flat_predictions, flat_labels))
+            union = tf.reduce_sum(tf.mul(flat_predictions, flat_predictions)) + tf.reduce_sum(
+                tf.mul(flat_labels, flat_labels))
+            loss = 1 - (2 * intersection / union)
         else:
             raise ValueError("Unknown cost function: "%cost_name)
 
